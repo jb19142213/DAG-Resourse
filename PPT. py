@@ -1,0 +1,165 @@
+# First, install the library
+!pip install python-pptx
+
+from pptx import Presentation
+from pptx.util import Inches, Pt
+from pptx.enum.text import PP_ALIGN
+
+def create_presentation():
+    prs = Presentation()
+
+    # Helper to add a slide
+    def add_slide(title_text, content_text_list):
+        slide_layout = prs.slide_layouts[1] # Title and Content
+        slide = prs.slides.add_slide(slide_layout)
+        
+        # Title
+        title = slide.shapes.title
+        title.text = title_text
+        
+        # Body
+        body_shape = slide.shapes.placeholders[1]
+        tf = body_shape.text_frame
+        tf.text = content_text_list[0] 
+        
+        for item in content_text_list[1:]:
+            p = tf.add_paragraph()
+            p.text = item
+            p.level = 0
+
+    # --- Slide 1: Title ---
+    slide_layout = prs.slide_layouts[0] # Title Slide
+    slide = prs.slides.add_slide(slide_layout)
+    slide.shapes.title.text = "Ensemble Methods for Sequence Classification with HMMs"
+    slide.placeholders[1].text = "J.P. Morgan AI Research\nSeptember 2024"
+
+    # --- Slide 2: Executive Summary ---
+    add_slide("Executive Summary", [
+        "Challenge: Sequence data (finance, bio) is high-dimensional & imbalanced.",
+        "Solution: HMM-e (Hidden Markov Model Ensembles).",
+        "Innovation: Ensemble of lightweight HMMs with 'pairwise matchup' scoring.",
+        "Results: Outperforms CNNs/LSTMs on imbalanced data; GPU not required."
+    ])
+
+    # --- Slide 3: The Problem Space ---
+    add_slide("The Problem Space: Sequence Modeling", [
+        "Data Types: Categorical (DNA), continuous (sensors), mixed.",
+        "Key Challenges:",
+        "1. Variable Lengths: Sequences rarely have equal timesteps.",
+        "2. High Dimensionality: Complex feature spaces.",
+        "3. Class Imbalance: Anomalies often <1% of data."
+    ])
+
+    # --- Slide 4: Current Approaches ---
+    add_slide("Current Approaches & Limitations", [
+        "Traditional Methods: Interpretable but miss complex dependencies.",
+        "Deep Learning (RNN/LSTM): Powerful but expensive, 'black box', risk of overfitting.",
+        "Shared Failure: Both struggle heavily with severe class imbalance."
+    ])
+
+    # --- Slide 5: Why HMMs? ---
+    add_slide("Why Hidden Markov Models (HMMs)?", [
+        "Definition: Statistical models assuming hidden states generate data.",
+        "Markov Property: Next state depends only on current state.",
+        "Pros: Handle variable lengths naturally; Highly interpretable."
+    ])
+
+    # --- Slide 6: Introducing HMM-e ---
+    add_slide("Introducing HMM-e", [
+        "Concept: Ensemble of many small models vs. one large model.",
+        "Architecture: N positive models, M negative models.",
+        "Diversity: Each model trained on random 1% subset of data.",
+        "Goal: Prevent majority class from dominating the learning."
+    ])
+
+    # --- Slide 7: Training Phase ---
+    add_slide("Training Phase Workflow", [
+        "1. Split training data into subsets.",
+        "2. Train independent HMMs on each subset.",
+        "Outcome: Bank of specialized models representing diverse behaviors."
+    ])
+
+    # --- Slide 8: Inference Phase ---
+    add_slide("Inference Phase Workflow", [
+        "1. Compute likelihood of new sequence under ALL models.",
+        "2. Pairwise Comparison: Compare every Positive Model vs. Negative Model.",
+        "Note: We do NOT use raw probability thresholds directly."
+    ])
+
+    # --- Slide 9: Composite Score ---
+    add_slide("The Composite Score (Maths)", [
+        "Formula: s(O) = Sum of matchups where P(O|Pos) > P(O|Neg).",
+        "Range: Integer between 0 and N*M.",
+        "Mechanism: Acts as a voting system based on relative rank."
+    ])
+
+    # --- Slide 10: Solving Variable Length ---
+    add_slide("Solving the Variable Length Problem", [
+        "Issue: Long sequences have naturally lower likelihoods.",
+        "Solution: We compare likelihoods for the SAME sequence across models.",
+        "Result: Length cancels out mathematically."
+    ])
+
+    # --- Slide 11: Ensuring Diversity ---
+    add_slide("Ensuring Model Diversity", [
+        "Risk: Identical models become redundant.",
+        "Strategy: Random subsampling (1%) and varying hidden states (3-5).",
+        "Result: Low correlation between sub-models (proven by similarity matrix)."
+    ])
+
+    # --- Slide 12: HMM-e as Feature Extractors ---
+    add_slide("HMM-e as Feature Extractors", [
+        "Technique: Use ensemble scores as input for other classifiers.",
+        "Feature Vector: List of all likelihood scores from the ensemble.",
+        "Normalization: L2 norm to handle scaling.",
+        "Benefit: Converts sequence data into fixed-size vectors."
+    ])
+
+    # --- Slide 13: HMM-e + SVM ---
+    add_slide("HMM-e + SVM", [
+        "Method: Train Support Vector Machine on HMM features.",
+        "Kernel: RBF (Radial Basis Function).",
+        "Why: Robust for binary classification in high-dimensional space."
+    ])
+
+    # --- Slide 14: HMM-e + Neural Networks ---
+    add_slide("HMM-e + Neural Networks", [
+        "Method: Train MLP (4 layers) on HMM features.",
+        "Specs: 512 -> 256 -> 128 nodes; ReLU, Dropout.",
+        "Why: Captures non-linear relationships between ensemble scores."
+    ])
+
+    # --- Slide 15: Experimental Data ---
+    add_slide("Datasets (Genomic Benchmark)", [
+        "Source: Open-source Genomics Benchmark.",
+        "Data: Nucleotide sequences (A, T, C, G).",
+        "Setup: Artificially created 50:1 imbalance to simulate fraud/anomaly."
+    ])
+
+    # --- Slide 16: Baselines ---
+    add_slide("Baselines for Comparison", [
+        "CNN: 1D Convolutions with Max-Pooling.",
+        "LSTM: Long Short-Term Memory (64 hidden units).",
+        "Note: Both used weighted sampling to handle imbalance."
+    ])
+
+    # --- Slide 17: Results (Imbalanced) ---
+    add_slide("Results: 50:1 Imbalance", [
+        "Singleton HMM: Fails (AUC ~61.4).",
+        "HMM-e: Strong improvement (AUC 87.2).",
+        "HMM-e + NN: Dominates (AUC 98.5).",
+        "Takeaway: Ensembles degrade much less than Deep Learning when imbalance hits."
+    ])
+    
+    # --- Slide 18: Summary ---
+    add_slide("Summary of Contributions", [
+        "1. Novel Framework: HMM Ensemble (HMM-e).",
+        "2. Robustness: Superior on imbalanced data.",
+        "3. Flexibility: Works as standalone or feature extractor.",
+        "4. Efficiency: GPU-free training."
+    ])
+
+    prs.save('HMM_Ensemble_Presentation.pptx')
+    print("Presentation created successfully! Download it from the files tab.")
+
+create_presentation()
